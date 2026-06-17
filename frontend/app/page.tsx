@@ -12,11 +12,10 @@ const personalities = [
 ];
 
 const flats = [
-  { id: 1, price: "₹7,500", location: "Koregaon Park, Pune", type: "2BHK", match: 94, emoji: "🏙️", badge: "🔥 Hot", badgeColor: "#EF4444", name: "Priya S.", dept: "CSE · 3rd yr", tags: ["🦉 Night Owl", "✨ Clean", "📚 Study"], color: "#EC4899" },
-  { id: 2, price: "₹5,500", location: "Baner, Pune · 2 seats left", type: "3BHK", match: 87, emoji: "🏢", badge: "✨ New", badgeColor: "#10B981", name: "Arjun M.", dept: "IT · 4th yr", tags: ["🦋 Social", "🎮 Gamer", "🌙 Late nights"], color: "#3B82F6" },
-  { id: 3, price: "₹9,000", location: "Viman Nagar, Pune · Premium", type: "2BHK", match: 78, emoji: "🏠", badge: "✅ Verified", badgeColor: "#8B5CF6", name: "Sneha K.", dept: "Design · 2nd yr", tags: ["🐢 Introvert", "📖 Reader", "🎨 Creative"], color: "#F59E0B" },
+  { id: 1, price: "₹7,500", location: "Koregaon Park, Pune", type: "2BHK", match: 94, image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&auto=format&fit=crop", badge: "🔥 Hot", badgeColor: "#EF4444", name: "Priya S.", dept: "CSE · 3rd yr", tags: ["🦉 Night Owl", "✨ Clean", "📚 Study"], color: "#EC4899" },
+  { id: 2, price: "₹5,500", location: "Baner, Pune · 2 seats left", type: "3BHK", match: 87, image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&auto=format&fit=crop", badge: "✨ New", badgeColor: "#10B981", name: "Arjun M.", dept: "IT · 4th yr", tags: ["🦋 Social", "🎮 Gamer", "🌙 Late nights"], color: "#3B82F6" },
+  { id: 3, price: "₹9,000", location: "Viman Nagar, Pune · Premium", type: "2BHK", match: 78, image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&auto=format&fit=crop", badge: "✅ Verified", badgeColor: "#8B5CF6", name: "Sneha K.", dept: "Design · 2nd yr", tags: ["🐢 Introvert", "📖 Reader", "🎨 Creative"], color: "#F59E0B" },
 ];
-
 const quiz = [
   { q: "When do you sleep? 😴", opts: ["Before 11PM 🌙", "11PM–1AM ⭐", "1AM–3AM 🦉", "Sleep is a myth 💀"] },
   { q: "Your room vibe? 🏠", opts: ["Pinterest perfect ✨", "Organized chaos 🌀", "Floor is storage 😅", "What is a room? 🤔"] },
@@ -49,6 +48,13 @@ const [profileCollege, setProfileCollege] = useState('CSE · 3rd Year · Pune');
 const [profileBudget, setProfileBudget] = useState('₹6k–9k/mo');
 const [searchQuery, setSearchQuery] = useState('');
 const [savedFlats, setSavedFlats] = useState<number[]>([]);
+
+const [uploadingImage, setUploadingImage] = useState(false);
+const [uploadedImages, setUploadedImages] = useState<{[key: number]: string}>({});
+const [voiceModal, setVoiceModal] = useState(false);
+const [recording, setRecording] = useState(false);
+const [voiceResult, setVoiceResult] = useState<any>(null);
+const [voiceTranscript, setVoiceTranscript] = useState('');
 const [authLoading, setAuthLoading] = useState(false);
 const [authError, setAuthError] = useState('');
 const [authName, setAuthName] = useState('');
@@ -115,7 +121,7 @@ useEffect(() => {
       </div>
       <div style={{ padding: '16px', maxWidth: '480px', margin: '0 auto' }}>
         <div style={{ background: `linear-gradient(135deg, ${selectedFlat.color}20, #1a1a2e)`, border: `1px solid ${selectedFlat.color}40`, borderRadius: '20px', padding: '24px', marginBottom: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '56px', marginBottom: '12px' }}>{selectedFlat.emoji}</div>
+<img src={uploadedImages[selectedFlat.id] || selectedFlat.image} alt={selectedFlat.location} style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '12px', marginBottom: '12px' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
             <div>
               <div style={{ fontSize: '26px', fontWeight: 900, background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{selectedFlat.price}/mo</div>
@@ -150,6 +156,30 @@ useEffect(() => {
           <div style={{ fontSize: '11px', color: '#10B981', letterSpacing: '2px', fontWeight: 700, marginBottom: '8px' }}>🧠 WHY YOU MATCH</div>
           <div style={{ fontSize: '13px', color: '#d1fae5', lineHeight: 1.7 }}>Both sleep late, prefer silent study sessions, and are vegetarian. AI predicts {selectedFlat.match}% harmony! ✨</div>
         </div>
+        <div style={{ marginBottom: '12px' }}>
+  <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 700 }}>📸 ADD FLAT PHOTOS</div>
+  <label style={{ display: 'block', padding: '14px', background: '#27272a', border: '2px dashed #3f3f46', borderRadius: '14px', textAlign: 'center', cursor: 'pointer', color: '#9ca3af', fontSize: '13px' }}>
+    {uploadingImage ? '⏳ Uploading...' : '📷 Click to upload photo'}
+    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+      if (!e.target.files?.[0]) return;
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append('image', e.target.files[0]);
+      try {
+        const res = await fetch('http://localhost:5001/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+setUploadedImages(prev => ({ ...prev, [selectedFlat.id]: data.url }));
+      } catch {
+        alert('❌ Upload failed!');
+      } finally {
+        setUploadingImage(false);
+      }
+    }} />
+  </label>
+</div>
         <button onClick={() => setChatOpen(true)} style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '16px', fontWeight: 800, cursor: 'pointer', marginBottom: '10px' }}>
           💬 Start Chat with {selectedFlat.name}
         </button>
@@ -257,8 +287,9 @@ useEffect(() => {
   return matchSearch && matchChip;
 }).map(flat => (
               <div key={flat.id} onClick={() => setSelectedFlat(flat)} style={{ background: '#18181b', border: '1px solid #27272a', borderRadius: '20px', marginBottom: '14px', overflow: 'hidden', cursor: 'pointer' }}>
-                <div style={{ height: '160px', background: `linear-gradient(135deg, ${flat.color}30, #1a1a2e)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '60px', position: 'relative' }}>
-                  {flat.emoji}
+                <div style={{ height: '200px', position: 'relative', overflow: 'hidden' }}>
+  <img src={flat.image} alt={flat.location} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }} onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')} onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')} />
+  <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, transparent 50%, #18181b)` }} />
                   <div style={{ position: 'absolute', top: '12px', left: '12px', background: flat.badgeColor, color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700 }}>{flat.badge}</div>
                   <div onClick={(e) => { e.stopPropagation(); setSavedFlats(prev => prev.includes(flat.id) ? prev.filter(id => id !== flat.id) : [...prev, flat.id]); }} style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', borderRadius: '50%', background: '#000000aa', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
   {savedFlats.includes(flat.id) ? '❤️' : '🤍'}
@@ -400,9 +431,9 @@ useEffect(() => {
                 </div>
               ))}
             </div>
-            <button style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', marginBottom: '8px' }}>
-              🎙️ Record Voice Vibe Check
-            </button>
+<button onClick={() => setVoiceModal(true)} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', marginBottom: '8px' }}>
+  🎙️ Record Voice Vibe Check
+</button>
             <button onClick={() => setEditProfile(true)} style={{ width: '100%', padding: '14px', background: '#18181b', border: '1px solid #27272a', borderRadius: '14px', color: '#9ca3af', fontSize: '14px', cursor: 'pointer' }}>
   ✏️ Edit Profile
 </button>
@@ -448,6 +479,74 @@ useEffect(() => {
     </div>
   </div>
 )}
+{/* Voice Modal */}
+{voiceModal && (
+  <div onClick={() => { setVoiceModal(false); setVoiceResult(null); setVoiceTranscript(''); }} style={{ position: 'fixed', inset: 0, background: '#000000aa', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+    <div onClick={e => e.stopPropagation()} style={{ background: '#18181b', border: '1px solid #27272a', borderRadius: '24px', padding: '28px', width: '100%', maxWidth: '380px', textAlign: 'center' }}>
+      <h2 style={{ fontSize: '20px', fontWeight: 900, marginBottom: '8px' }}>🎙️ Voice Vibe Check</h2>
+      <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '24px' }}>Tell us about yourself — AI will analyze your vibe!</p>
+      {!voiceResult ? (
+        <div>
+          <div style={{ fontSize: '64px', marginBottom: '16px' }}>{recording ? '🔴' : '🎙️'}</div>
+         <p style={{ fontSize: '13px', color: recording ? '#EF4444' : '#6b7280', marginBottom: '20px' }}>
+{recording ? 'Recording... say anything about yourself!' : 'Press the button and talk about yourself'}
+</p>
+          {voiceTranscript && (
+            <div style={{ background: '#27272a', borderRadius: '12px', padding: '12px', marginBottom: '16px', fontSize: '13px', color: '#9ca3af', textAlign: 'left' }}>
+              "{voiceTranscript}"
+            </div>
+          )}
+          <button onClick={() => {
+            if (recording) return;
+            setRecording(true);
+            setVoiceTranscript('');
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+            if (!SpeechRecognition) { alert('Browser speech not supported!'); setRecording(false); return; }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-IN';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.onresult = async (event: any) => {
+              const transcript = event.results[0][0].transcript;
+              setVoiceTranscript(transcript);
+              setRecording(false);
+              try {
+                const res = await fetch('http://localhost:5001/api/analyze-voice', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ transcript })
+                });
+                const data = await res.json();
+                setVoiceResult(data);
+              } catch {
+                setVoiceResult({ type: 'The Night Owl', emoji: '🦉', color: '#8B5CF6', desc: 'Sleeps at 3AM, vibes at midnight' });
+              }
+            };
+            recognition.onerror = () => setRecording(false);
+            recognition.start();
+          }} style={{ width: '100%', padding: '16px', background: recording ? '#EF4444' : 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
+            {recording ? '🔴 Recording...' : '🎙️ Start Recording'}
+          </button>
+        </div>
+      ) : (
+        <div>
+          <div style={{ fontSize: '64px', marginBottom: '12px' }}>{voiceResult.emoji}</div>
+          <div style={{ fontSize: '22px', fontWeight: 900, color: voiceResult.color, marginBottom: '8px' }}>{voiceResult.type}</div>
+          <div style={{ fontSize: '13px', color: '#9ca3af', marginBottom: '20px' }}>{voiceResult.desc}</div>
+          <div style={{ background: '#10B98115', border: '1px solid #10B98130', borderRadius: '12px', padding: '12px', marginBottom: '20px', fontSize: '13px', color: '#d1fae5' }}>
+            {voiceResult.analysis}
+          </div>
+          <button onClick={() => { setVoiceResult(null); setVoiceTranscript(''); }} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', marginBottom: '8px' }}>
+            🔄 Try Again
+          </button>
+          <button onClick={() => setVoiceModal(false)} style={{ width: '100%', padding: '12px', background: 'transparent', border: '1px solid #27272a', borderRadius: '14px', color: '#9ca3af', fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit' }}>
+            ✅ Save to Profile
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+)}
       {/* Auth Modal */}
       {showAuth && (
         <div onClick={() => setShowAuth(false)} style={{ position: 'fixed', inset: 0, background: '#000000aa', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
@@ -476,15 +575,30 @@ useEffect(() => {
 <input value={authPassword} onChange={e => setAuthPassword(e.target.value)} placeholder="Password" type="password" style={{ padding: '12px 16px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit' }} />
 {authError && <p style={{ color: '#EF4444', fontSize: '12px', margin: 0 }}>{authError}</p>}
             </div>
-           <button onClick={() => {
+           <button onClick={async () => {
   setAuthError('');
-  if (!authEmail || !authPassword) return setAuthError('Email aur password required hai!');
-  if (authMode === 'signup' && !authName) return setAuthError('Naam required hai!');
-  setAuthLoading(true);
-  setTimeout(() => {
+  if (!authEmail || !authPassword) return setAuthError('Email and password are required!');
+if (authMode === 'signup' && !authName) return setAuthError('Name is required!');
+setAuthLoading(true);
+  try {
+    const res = await fetch(`http://localhost:5001/api/auth/${authMode}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: authName, email: authEmail, password: authPassword })
+    });
+    const data = await res.json();
+    if (data.error) {
+      setAuthError(data.error);
+    } else {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setShowAuth(false);
+    }
+  } catch {
+    setAuthError('Something went wrong!');
+  } finally {
     setAuthLoading(false);
-    setShowAuth(false);
-  }, 1000);
+  }
 }} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', opacity: authLoading ? 0.7 : 1 }}>
   {authLoading ? '⏳ Please wait...' : authMode === 'login' ? 'Login →' : 'Create Account →'}
 </button>

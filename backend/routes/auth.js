@@ -23,8 +23,9 @@ router.post('/signup', async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'roommateai_secret', { expiresIn: '7d' });
 
     res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
-  } catch (err) {
-    res.status(500).json({ error: 'Something went wrong!' });
+} catch (err) {
+    console.log('Signup Error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
