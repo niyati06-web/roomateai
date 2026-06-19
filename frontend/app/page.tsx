@@ -75,7 +75,7 @@ const [authPassword, setAuthPassword] = useState('');
 const socketRef = useRef<any>(null);
 
 useEffect(() => {
-  socketRef.current = io('http://localhost:5001');
+  socketRef.current = io('https://roomateai.onrender.com');
   return () => {
     socketRef.current?.disconnect();
   };
@@ -98,7 +98,7 @@ useEffect(() => {
   setMessages(prev => [...prev, { from: 'them', text: '⏳ typing...' }]);
   
   try {
-    const res = await fetch('http://localhost:5001/api/chat', {
+    const res = await fetch('https://roomateai.onrender.com/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: userMsg, name: selectedFlat?.name || 'Priya' })
@@ -166,7 +166,7 @@ useEffect(() => {
       const formData = new FormData();
       formData.append('image', e.target.files[0]);
       try {
-        const res = await fetch('http://localhost:5001/api/upload', {
+        const res = await fetch('https://roomateai.onrender.com/api/upload', {
           method: 'POST',
           body: formData
         });
@@ -511,7 +511,7 @@ setUploadedImages(prev => ({ ...prev, [selectedFlat.id]: data.url }));
               setVoiceTranscript(transcript);
               setRecording(false);
               try {
-                const res = await fetch('http://localhost:5001/api/analyze-voice', {
+                const res = await fetch('https://roomateai.onrender.com/api/analyze-voice', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ transcript })
@@ -581,7 +581,7 @@ setUploadedImages(prev => ({ ...prev, [selectedFlat.id]: data.url }));
 if (authMode === 'signup' && !authName) return setAuthError('Name is required!');
 setAuthLoading(true);
   try {
-    const res = await fetch(`http://localhost:5001/api/auth/${authMode}`, {
+    const res = await fetch(`https://roomateai.onrender.com/api/auth/${authMode}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: authName, email: authEmail, password: authPassword })
