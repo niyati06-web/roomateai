@@ -46,8 +46,11 @@ const [editProfile, setEditProfile] = useState(false);
 const [profileName, setProfileName] = useState('Niyati M.');
 const [profileCollege, setProfileCollege] = useState('CSE · 3rd Year · Pune');
 const [profileBudget, setProfileBudget] = useState('₹6k–9k/mo');
+const [profileBio, setProfileBio] = useState('');
 const [profilePhoto, setProfilePhoto] = useState('');
 const [userRole, setUserRole] = useState<'seeker' | 'host' | null>(null);
+const [onboardingComplete, setOnboardingComplete] = useState(false);
+const [profileSetupStep, setProfileSetupStep] = useState(0);
 const [myListing, setMyListing] = useState<any>(null);
 const [listingPrice, setListingPrice] = useState('');
 const [listingLocation, setListingLocation] = useState('');
@@ -422,6 +425,129 @@ const res = await fetch(`https://roomateai.onrender.com/api/auth/${authMode}`, {
       </div>
     </div>
   );
+  if (currentUser && userRole && !onboardingComplete && !quizResult) return (
+    <div style={{ background: '#09090b', minHeight: '100vh', color: 'white', fontFamily: 'Segoe UI, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '380px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎭</div>
+          <h1 style={{ fontSize: '20px', fontWeight: 900 }}>Quick Vibe Check</h1>
+          <p style={{ fontSize: '13px', color: '#6b7280' }}>Help us find your perfect match</p>
+        </div>
+
+        <div style={{ background: '#18181b', border: '1px solid #27272a', borderRadius: '16px', padding: '20px' }}>
+          <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '8px' }}>{quizStep + 1}/{quiz.length}</div>
+          <div style={{ height: '3px', background: '#27272a', borderRadius: '2px', marginBottom: '20px' }}>
+            <div style={{ height: '100%', width: `${(quizStep / quiz.length) * 100}%`, background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', borderRadius: '2px' }} />
+          </div>
+          <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '16px' }}>{quiz[quizStep].q}</h3>
+          <div style={{ display: 'grid', gap: '10px' }}>
+            {quiz[quizStep].opts.map(opt => (
+              <button key={opt} onClick={() => handleQuiz(opt)} style={{ padding: '14px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '12px', color: 'white', cursor: 'pointer', textAlign: 'left', fontSize: '14px', fontFamily: 'inherit' }}>{opt}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+if (currentUser && userRole && !onboardingComplete && quizResult) return (
+    <div style={{ background: '#09090b', minHeight: '100vh', color: 'white', fontFamily: 'Segoe UI, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '380px', textAlign: 'center' }}>
+        <div style={{ fontSize: '64px', marginBottom: '16px' }}>{quizResult.emoji}</div>
+        <h1 style={{ fontSize: '24px', fontWeight: 900, color: quizResult.color, marginBottom: '8px' }}>{quizResult.type}</h1>
+        <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '32px' }}>{quizResult.desc}</p>
+   <button onClick={() => setOnboardingComplete(true)} style={{ width: '100%', padding: '15px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
+          Set Up My Profile →
+        </button>
+      </div>
+    </div>
+  );
+
+if (currentUser && userRole && quizResult && onboardingComplete && profileSetupStep < 6) return (
+    <div style={{ background: '#09090b', minHeight: '100vh', color: 'white', fontFamily: 'Segoe UI, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '380px' }}>
+        <div style={{ height: '4px', background: '#27272a', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${((profileSetupStep + 1) / 6) * 100}%`, background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', borderRadius: '2px', transition: 'width 0.4s ease' }} />
+        </div>
+
+        {profileSetupStep === 0 && (
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>👤</div>
+            <h2 style={{ fontSize: '22px', fontWeight: 900, marginBottom: '6px' }}>What's your name?</h2>
+            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '24px' }}>Let your future roommate know you</p>
+            <input value={profileName} onChange={e => setProfileName(e.target.value)} placeholder="Your full name" style={{ width: '100%', padding: '16px', background: '#18181b', border: '1px solid #27272a', borderRadius: '14px', color: 'white', fontSize: '16px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '20px' }} />
+          </div>
+        )}
+
+        {profileSetupStep === 1 && (
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎓</div>
+            <h2 style={{ fontSize: '22px', fontWeight: 900, marginBottom: '6px' }}>Where do you study?</h2>
+            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '24px' }}>College & year</p>
+            <input value={profileCollege} onChange={e => setProfileCollege(e.target.value)} placeholder="e.g. CSE · 3rd Year · Pune" style={{ width: '100%', padding: '16px', background: '#18181b', border: '1px solid #27272a', borderRadius: '14px', color: 'white', fontSize: '16px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '20px' }} />
+          </div>
+        )}
+{profileSetupStep === 2 && (
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🌙</div>
+            <h2 style={{ fontSize: '22px', fontWeight: 900, marginBottom: '6px' }}>When do you sleep?</h2>
+            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '24px' }}>Be honest, no judgment here</p>
+            <div style={{ display: 'grid', gap: '10px', marginBottom: '12px' }}>
+              {['Before 11PM', '11PM–1AM', 'After 1AM', 'Sleep is a myth'].map(opt => (
+                <button key={opt} onClick={() => setProfileSleep(opt)} style={{ padding: '16px', background: profileSleep === opt ? 'linear-gradient(135deg, #EC4899, #8B5CF6)' : '#18181b', border: profileSleep === opt ? 'none' : '1px solid #27272a', borderRadius: '14px', color: 'white', cursor: 'pointer', textAlign: 'left', fontSize: '14px', fontFamily: 'inherit', fontWeight: profileSleep === opt ? 700 : 400 }}>{opt}</button>
+              ))}
+            </div>
+            <input value={['Before 11PM', '11PM–1AM', 'After 1AM', 'Sleep is a myth'].includes(profileSleep) ? '' : profileSleep} onChange={e => setProfileSleep(e.target.value)} placeholder="Or type your own answer..." style={{ width: '100%', padding: '14px 16px', background: '#18181b', border: '1px dashed #3f3f46', borderRadius: '12px', color: 'white', fontSize: '13px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+          </div>
+        )}
+        
+        {profileSetupStep === 3 && (
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>✨</div>
+            <h2 style={{ fontSize: '22px', fontWeight: 900, marginBottom: '6px' }}>Your room vibe?</h2>
+            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '24px' }}>How does your space usually look</p>
+            <div style={{ display: 'grid', gap: '10px', marginBottom: '12px' }}>
+              {['Clean Freak', 'Pinterest Perfect', 'Organized Chaos', 'Floor is Storage'].map(opt => (
+                <button key={opt} onClick={() => setProfileVibe(opt)} style={{ padding: '16px', background: profileVibe === opt ? 'linear-gradient(135deg, #EC4899, #8B5CF6)' : '#18181b', border: profileVibe === opt ? 'none' : '1px solid #27272a', borderRadius: '14px', color: 'white', cursor: 'pointer', textAlign: 'left', fontSize: '14px', fontFamily: 'inherit', fontWeight: profileVibe === opt ? 700 : 400 }}>{opt}</button>
+              ))}
+            </div>
+            <input value={['Clean Freak', 'Pinterest Perfect', 'Organized Chaos', 'Floor is Storage'].includes(profileVibe) ? '' : profileVibe} onChange={e => setProfileVibe(e.target.value)} placeholder="Or type your own answer..." style={{ width: '100%', padding: '14px 16px', background: '#18181b', border: '1px dashed #3f3f46', borderRadius: '12px', color: 'white', fontSize: '13px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+          </div>
+        )}
+
+        {profileSetupStep === 4 && (
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🌿</div>
+            <h2 style={{ fontSize: '22px', fontWeight: 900, marginBottom: '6px' }}>Dietary preference?</h2>
+            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '24px' }}>So your roommate knows the kitchen vibe</p>
+            <div style={{ display: 'grid', gap: '10px', marginBottom: '12px' }}>
+              {['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Eggetarian'].map(opt => (
+                <button key={opt} onClick={() => setProfileDiet(opt)} style={{ padding: '16px', background: profileDiet === opt ? 'linear-gradient(135deg, #EC4899, #8B5CF6)' : '#18181b', border: profileDiet === opt ? 'none' : '1px solid #27272a', borderRadius: '14px', color: 'white', cursor: 'pointer', textAlign: 'left', fontSize: '14px', fontFamily: 'inherit', fontWeight: profileDiet === opt ? 700 : 400 }}>{opt}</button>
+              ))}
+            </div>
+            <input value={['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Eggetarian'].includes(profileDiet) ? '' : profileDiet} onChange={e => setProfileDiet(e.target.value)} placeholder="Or type your own answer..." style={{ width: '100%', padding: '14px 16px', background: '#18181b', border: '1px dashed #3f3f46', borderRadius: '12px', color: 'white', fontSize: '13px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+          </div>
+        )}
+        {profileSetupStep === 5 && (
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>💰</div>
+            <h2 style={{ fontSize: '22px', fontWeight: 900, marginBottom: '6px' }}>Your budget range?</h2>
+            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '24px' }}>Monthly rent you're comfortable with</p>
+            <input value={profileBudget} onChange={e => setProfileBudget(e.target.value)} placeholder="e.g. ₹6k–9k/mo" style={{ width: '100%', padding: '16px', background: '#18181b', border: '1px solid #27272a', borderRadius: '14px', color: 'white', fontSize: '16px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '20px' }} />
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {profileSetupStep > 0 && (
+            <button onClick={() => setProfileSetupStep(s => s - 1)} style={{ padding: '15px 20px', background: '#18181b', border: '1px solid #27272a', borderRadius: '14px', color: '#9ca3af', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>←</button>
+          )}
+          <button onClick={() => setProfileSetupStep(s => s + 1)} style={{ flex: 1, padding: '15px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
+            {profileSetupStep === 5 ? "Let's Go! 🚀" : 'Next →'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );     
 if (userRole === 'host' && !myListing) return (
     <div style={{ background: '#09090b', minHeight: '100vh', color: 'white', fontFamily: 'Segoe UI, sans-serif', padding: '20px' }}>
       <div style={{ maxWidth: '420px', margin: '0 auto' }}>
