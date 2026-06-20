@@ -193,7 +193,8 @@ useEffect(() => {
           <div style={{ fontSize: '11px', color: '#10B981', letterSpacing: '2px', fontWeight: 700, marginBottom: '8px' }}>🧠 WHY YOU MATCH</div>
           <div style={{ fontSize: '13px', color: '#d1fae5', lineHeight: 1.7 }}>Both sleep late, prefer silent study sessions, and are vegetarian. AI predicts {selectedFlat.match}% harmony! ✨</div>
         </div>
-<label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', marginBottom: '12px', cursor: 'pointer', color: '#EC4899', fontSize: '12px', fontWeight: 600 }}>
+{selectedFlat.id === 999 && (
+        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', marginBottom: '12px', cursor: 'pointer', color: '#EC4899', fontSize: '12px', fontWeight: 600 }}>
           {uploadingImage ? '⏳ Uploading...' : '📷 Add photos of this flat'}
           <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={async (e) => {
             if (!e.target.files?.length) return;
@@ -217,6 +218,7 @@ useEffect(() => {
             setUploadingImage(false);
           }} />
         </label>
+        )}
 
 
         <button onClick={() => setChatOpen(true)} style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '16px', fontWeight: 800, cursor: 'pointer', marginBottom: '10px' }}>
@@ -278,7 +280,7 @@ useEffect(() => {
           if (!authEmail) return setAuthError('Email is required!');
           setAuthLoading(true);
           try {
-            const res = await fetch('http://localhost:5001/api/auth/forgot-password', {
+            const res = await fetch('https://roomateai.onrender.com/api/auth/forgot-password', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email: authEmail })
@@ -315,7 +317,7 @@ if (!currentUser && authMode2 === 'reset') return (
           if (!resetOtp || !newPassword) return setAuthError('Please fill all fields!');
           setAuthLoading(true);
           try {
-            const res = await fetch('http://localhost:5001/api/auth/reset-password', {
+const res = await fetch('https://roomateai.onrender.com/api/auth/reset-password', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email: authEmail, otp: resetOtp, newPassword })
@@ -588,7 +590,7 @@ if (userRole === 'host' && !myListing) return (
                       <div style={{ fontSize: '11px', color: '#6b7280' }}>Looking for</div>
                       <div style={{ fontSize: '13px', fontWeight: 700 }}>{flat.name} · {flat.dept}</div>
                     </div>
-                    <button style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '20px', color: 'white', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>Connect ✨</button>
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedFlat(flat); }} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '20px', color: 'white', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>Connect ✨</button>
                   </div>
                 </div>
               </div>
