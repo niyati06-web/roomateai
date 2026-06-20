@@ -50,5 +50,64 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Something went wrong!' });
   }
 });
+const nodemailer = require('nodemailer');
 
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+// FORGOT PASSWORD - Send OTP
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: 'No account with this email!' });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.resetOTP = otp;
+    user.resetOTPExpiry = Date.now() + 10 * 60 * 1000; // 10 min
+    await user.save();
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: '🏠 RoommateAI - Password Reset OTP',
+      html: `<div style="font-family: sans-serif; padding: 20px;">
+        <h2 style="color: #EC4899;">RoommateAI Password Reset</h2>
+        <p>Your OTP code is:</p>
+        <h1 style="background: #18181b; color: white; padding: 16px; border-radius: 12px; text-align: center; letter-spacing: 8px;">${otp}</h1>
+        <p>This code expires in 10 minutes.</p>
+      </div>`
+    });
+
+    res.json({ message: 'OTP sent to your email!' });
+  } catch (err) {
+    console.log('Forgot Password Error:', err);
+    res.status(500).json({ error: 'Failed to send OTP' });
+  }
+});
+
+// RESET PASSWORD - Verify OTP & set new password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: 'User not found!' });
+    if (user.resetOTP !== otp) return res.status(400).json({ error: 'Invalid OTP!' });
+    if (Date.now() > user.resetOTPExpiry) return res.status(400).json({ error: 'OTP expired!' });
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    user.password = hashed;
+    user.resetOTP = '';
+    await user.save();
+
+    res.json({ message: 'Password reset successful!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
 module.exports = router;

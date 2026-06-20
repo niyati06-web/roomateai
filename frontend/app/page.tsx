@@ -46,11 +46,24 @@ const [editProfile, setEditProfile] = useState(false);
 const [profileName, setProfileName] = useState('Niyati M.');
 const [profileCollege, setProfileCollege] = useState('CSE · 3rd Year · Pune');
 const [profileBudget, setProfileBudget] = useState('₹6k–9k/mo');
+const [profilePhoto, setProfilePhoto] = useState('');
+const [userRole, setUserRole] = useState<'seeker' | 'host' | null>(null);
+const [myListing, setMyListing] = useState<any>(null);
+const [listingPrice, setListingPrice] = useState('');
+const [listingLocation, setListingLocation] = useState('');
+const [listingType, setListingType] = useState('2BHK');
+const [listingImages, setListingImages] = useState<string[]>([]);
+const [profileSleep, setProfileSleep] = useState('After 1AM');
+const [profileStudy, setProfileStudy] = useState('Dead Silence');
+const [profileVibe, setProfileVibe] = useState('Clean Freak');
+const [profileSocial, setProfileSocial] = useState('Selective');
+const [profileDiet, setProfileDiet] = useState('Vegetarian');
 const [searchQuery, setSearchQuery] = useState('');
 const [savedFlats, setSavedFlats] = useState<number[]>([]);
 
 const [uploadingImage, setUploadingImage] = useState(false);
-const [uploadedImages, setUploadedImages] = useState<{[key: number]: string}>({});
+const [uploadedImages, setUploadedImages] = useState<{[key: number]: string[]}>({});
+const [activeImageIndex, setActiveImageIndex] = useState(0);
 const [voiceModal, setVoiceModal] = useState(false);
 const [recording, setRecording] = useState(false);
 const [voiceResult, setVoiceResult] = useState<any>(null);
@@ -60,6 +73,10 @@ const [authError, setAuthError] = useState('');
 const [authName, setAuthName] = useState('');
 const [authEmail, setAuthEmail] = useState('');
 const [authPassword, setAuthPassword] = useState('');
+const [authMode2, setAuthMode2] = useState<'login' | 'signup' | 'forgot' | 'reset'>('login');
+const [resetOtp, setResetOtp] = useState('');
+const [newPassword, setNewPassword] = useState('');
+const [currentUser, setCurrentUser] = useState<any>(null);
   useEffect(() => {
     const interval = setInterval(() => setActiveP(p => (p + 1) % personalities.length), 2000);
     return () => clearInterval(interval);
@@ -72,6 +89,10 @@ const [authPassword, setAuthPassword] = useState('');
       setQuizResult(personalities[Math.floor(Math.random() * personalities.length)]);
     }
   };
+  useEffect(() => {
+  const savedUser = localStorage.getItem('user');
+  if (savedUser) setCurrentUser(JSON.parse(savedUser));
+}, []);
 const socketRef = useRef<any>(null);
 
 useEffect(() => {
@@ -121,7 +142,23 @@ useEffect(() => {
       </div>
       <div style={{ padding: '16px', maxWidth: '480px', margin: '0 auto' }}>
         <div style={{ background: `linear-gradient(135deg, ${selectedFlat.color}20, #1a1a2e)`, border: `1px solid ${selectedFlat.color}40`, borderRadius: '20px', padding: '24px', marginBottom: '16px', textAlign: 'center' }}>
-<img src={uploadedImages[selectedFlat.id] || selectedFlat.image} alt={selectedFlat.location} style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '12px', marginBottom: '12px' }} />
+<img 
+  src={uploadedImages[selectedFlat.id]?.[activeImageIndex] || selectedFlat.image} 
+  alt={selectedFlat.location} 
+  style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '12px', marginBottom: '12px' }} 
+/>
+{uploadedImages[selectedFlat.id]?.length > 0 && (
+  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', overflowX: 'auto' }}>
+    {[selectedFlat.image, ...uploadedImages[selectedFlat.id]].map((url, i) => (
+      <img 
+        key={i} 
+        src={url} 
+        onClick={(e) => { e.stopPropagation(); setActiveImageIndex(i === 0 ? 0 : i - 1); }}
+        style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '10px', flexShrink: 0, cursor: 'pointer', border: activeImageIndex === (i === 0 ? 0 : i - 1) ? '2px solid #EC4899' : '2px solid transparent' }} 
+      />
+    ))}
+  </div>
+)}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
             <div>
               <div style={{ fontSize: '26px', fontWeight: 900, background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{selectedFlat.price}/mo</div>
@@ -156,30 +193,32 @@ useEffect(() => {
           <div style={{ fontSize: '11px', color: '#10B981', letterSpacing: '2px', fontWeight: 700, marginBottom: '8px' }}>🧠 WHY YOU MATCH</div>
           <div style={{ fontSize: '13px', color: '#d1fae5', lineHeight: 1.7 }}>Both sleep late, prefer silent study sessions, and are vegetarian. AI predicts {selectedFlat.match}% harmony! ✨</div>
         </div>
-        <div style={{ marginBottom: '12px' }}>
-  <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 700 }}>📸 ADD FLAT PHOTOS</div>
-  <label style={{ display: 'block', padding: '14px', background: '#27272a', border: '2px dashed #3f3f46', borderRadius: '14px', textAlign: 'center', cursor: 'pointer', color: '#9ca3af', fontSize: '13px' }}>
-    {uploadingImage ? '⏳ Uploading...' : '📷 Click to upload photo'}
-    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
-      if (!e.target.files?.[0]) return;
-      setUploadingImage(true);
-      const formData = new FormData();
-      formData.append('image', e.target.files[0]);
-      try {
-        const res = await fetch('https://roomateai.onrender.com/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        const data = await res.json();
-setUploadedImages(prev => ({ ...prev, [selectedFlat.id]: data.url }));
-      } catch {
-        alert('❌ Upload failed!');
-      } finally {
-        setUploadingImage(false);
-      }
-    }} />
-  </label>
-</div>
+<label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', marginBottom: '12px', cursor: 'pointer', color: '#EC4899', fontSize: '12px', fontWeight: 600 }}>
+          {uploadingImage ? '⏳ Uploading...' : '📷 Add photos of this flat'}
+          <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={async (e) => {
+            if (!e.target.files?.length) return;
+            setUploadingImage(true);
+            const newUrls: string[] = [];
+            for (const file of Array.from(e.target.files)) {
+              const formData = new FormData();
+              formData.append('image', file);
+              try {
+                const res = await fetch('https://roomateai.onrender.com/api/upload', {
+                  method: 'POST',
+                  body: formData
+                });
+                const data = await res.json();
+                newUrls.push(data.url);
+              } catch {
+                alert('❌ Upload failed for one image!');
+              }
+            }
+            setUploadedImages(prev => ({ ...prev, [selectedFlat.id]: [...(prev[selectedFlat.id] || []), ...newUrls] }));
+            setUploadingImage(false);
+          }} />
+        </label>
+
+
         <button onClick={() => setChatOpen(true)} style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '16px', fontWeight: 800, cursor: 'pointer', marginBottom: '10px' }}>
           💬 Start Chat with {selectedFlat.name}
         </button>
@@ -224,6 +263,230 @@ setUploadedImages(prev => ({ ...prev, [selectedFlat.id]: data.url }));
     </div>
   );
 
+ if (!currentUser && authMode2 === 'forgot') return (
+    <div style={{ background: '#09090b', minHeight: '100vh', color: 'white', fontFamily: 'Segoe UI, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '380px', textAlign: 'center' }}>
+        <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔑</div>
+        <h1 style={{ fontSize: '22px', fontWeight: 900, marginBottom: '8px' }}>Forgot Password?</h1>
+        <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '24px' }}>Enter your email, we'll send you an OTP</p>
+
+        <input value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="Email" type="email" style={{ width: '100%', padding: '14px 16px', background: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '12px' }} />
+        {authError && <p style={{ color: '#EF4444', fontSize: '12px', marginBottom: '12px' }}>{authError}</p>}
+
+        <button onClick={async () => {
+          setAuthError('');
+          if (!authEmail) return setAuthError('Email is required!');
+          setAuthLoading(true);
+          try {
+            const res = await fetch('http://localhost:5001/api/auth/forgot-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: authEmail })
+            });
+            const data = await res.json();
+            if (data.error) setAuthError(data.error);
+            else setAuthMode2('reset');
+          } catch {
+            setAuthError('Something went wrong!');
+          } finally {
+            setAuthLoading(false);
+          }
+        }} style={{ width: '100%', padding: '15px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', opacity: authLoading ? 0.7 : 1, marginBottom: '12px' }}>
+          {authLoading ? '⏳ Sending...' : 'Send OTP →'}
+        </button>
+
+        <p onClick={() => { setAuthMode2('login'); setAuthError(''); }} style={{ fontSize: '13px', color: '#6b7280', cursor: 'pointer' }}>← Back to Login</p>
+      </div>
+    </div>
+  );
+if (!currentUser && authMode2 === 'reset') return (
+    <div style={{ background: '#09090b', minHeight: '100vh', color: 'white', fontFamily: 'Segoe UI, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '380px', textAlign: 'center' }}>
+        <div style={{ fontSize: '40px', marginBottom: '12px' }}>📧</div>
+        <h1 style={{ fontSize: '22px', fontWeight: 900, marginBottom: '8px' }}>Enter OTP</h1>
+        <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '24px' }}>Check your email for the 6-digit code</p>
+
+        <input value={resetOtp} onChange={e => setResetOtp(e.target.value)} placeholder="6-digit OTP" maxLength={6} style={{ width: '100%', padding: '14px 16px', background: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: 'white', fontSize: '20px', textAlign: 'center', letterSpacing: '8px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '12px' }} />
+        <input value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New Password" type="password" style={{ width: '100%', padding: '14px 16px', background: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '12px' }} />
+        {authError && <p style={{ color: '#EF4444', fontSize: '12px', marginBottom: '12px' }}>{authError}</p>}
+
+        <button onClick={async () => {
+          setAuthError('');
+          if (!resetOtp || !newPassword) return setAuthError('Please fill all fields!');
+          setAuthLoading(true);
+          try {
+            const res = await fetch('http://localhost:5001/api/auth/reset-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: authEmail, otp: resetOtp, newPassword })
+            });
+            const data = await res.json();
+            if (data.error) setAuthError(data.error);
+            else {
+              alert('✅ Password reset successful! Please login.');
+              setAuthMode2('login');
+              setAuthMode('login');
+              setResetOtp('');
+              setNewPassword('');
+            }
+          } catch {
+            setAuthError('Something went wrong!');
+          } finally {
+            setAuthLoading(false);
+          }
+        }} style={{ width: '100%', padding: '15px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', opacity: authLoading ? 0.7 : 1, marginBottom: '12px' }}>
+          {authLoading ? '⏳ Resetting...' : 'Reset Password →'}
+        </button>
+
+        <p onClick={() => { setAuthMode2('login'); setAuthError(''); }} style={{ fontSize: '13px', color: '#6b7280', cursor: 'pointer' }}>← Back to Login</p>
+      </div>
+    </div>
+  );
+if (!currentUser) return (
+    <div style={{ background: '#09090b', minHeight: '100vh', color: 'white', fontFamily: 'Segoe UI, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '380px', textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏠</div>
+        <h1 style={{ fontSize: '28px', fontWeight: 900, background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '8px' }}>RoommateAI</h1>
+        <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '32px' }}>Find your perfect roommate with AI</p>
+
+        <div style={{ display: 'flex', background: '#27272a', borderRadius: '12px', padding: '4px', marginBottom: '20px' }}>
+          {(['login', 'signup'] as const).map(mode => (
+            <button key={mode} onClick={() => setAuthMode(mode)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 700, background: authMode === mode ? 'linear-gradient(135deg, #EC4899, #8B5CF6)' : 'transparent', color: authMode === mode ? 'white' : '#6b7280', fontFamily: 'inherit' }}>
+              {mode === 'login' ? 'Login' : 'Sign Up'}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+          {authMode === 'signup' && (
+            <input value={authName} onChange={e => setAuthName(e.target.value)} placeholder="Full Name" style={{ padding: '14px 16px', background: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+          )}
+          <input value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="Email" type="email" style={{ padding: '14px 16px', background: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+          <input value={authPassword} onChange={e => setAuthPassword(e.target.value)} placeholder="Password" type="password" style={{ padding: '14px 16px', background: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+         {authMode === 'login' && (
+            <p onClick={() => setAuthMode2('forgot')} style={{ fontSize: '12px', color: '#8B5CF6', cursor: 'pointer', textAlign: 'right', margin: '-8px 0 0' }}>Forgot Password?</p>
+          )}
+          {authError && <p style={{ color: '#EF4444', fontSize: '12px', margin: 0 }}>{authError}</p>}
+        </div> 
+
+        <button onClick={async () => {
+          setAuthError('');
+          if (!authEmail || !authPassword) return setAuthError('Email and password are required!');
+          if (authMode === 'signup' && !authName) return setAuthError('Name is required!');
+          setAuthLoading(true);
+          try {
+const res = await fetch(`https://roomateai.onrender.com/api/auth/${authMode}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: authName, email: authEmail, password: authPassword })
+            });
+            const data = await res.json();
+            if (data.error) {
+              setAuthError(data.error);
+            } else {
+              localStorage.setItem('token', data.token);
+              localStorage.setItem('user', JSON.stringify(data.user));
+              setCurrentUser(data.user);
+            }
+          } catch {
+            setAuthError('Something went wrong!');
+          } finally {
+            setAuthLoading(false);
+          }
+        }} style={{ width: '100%', padding: '15px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', opacity: authLoading ? 0.7 : 1 }}>
+          {authLoading ? '⏳ Please wait...' : authMode === 'login' ? 'Login →' : 'Create Account →'}
+        </button>
+      </div>
+    </div>
+  );
+  if (currentUser && !userRole) return (
+    <div style={{ background: '#09090b', minHeight: '100vh', color: 'white', fontFamily: 'Segoe UI, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '380px', textAlign: 'center' }}>
+        <div style={{ fontSize: '40px', marginBottom: '12px' }}>👋</div>
+        <h1 style={{ fontSize: '22px', fontWeight: 900, marginBottom: '8px' }}>Hey {currentUser.name?.split(' ')[0]}!</h1>
+        <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '32px' }}>What brings you here?</p>
+
+        <div onClick={() => setUserRole('seeker')} style={{ background: '#18181b', border: '2px solid #27272a', borderRadius: '18px', padding: '24px', marginBottom: '14px', cursor: 'pointer', textAlign: 'left' }}>
+          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔍</div>
+          <div style={{ fontSize: '17px', fontWeight: 800, marginBottom: '4px' }}>I'm looking for a room</div>
+          <div style={{ fontSize: '13px', color: '#9ca3af' }}>Browse flats and find your perfect roommate</div>
+        </div>
+
+        <div onClick={() => setUserRole('host')} style={{ background: '#18181b', border: '2px solid #27272a', borderRadius: '18px', padding: '24px', cursor: 'pointer', textAlign: 'left' }}>
+          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏠</div>
+          <div style={{ fontSize: '17px', fontWeight: 800, marginBottom: '4px' }}>I have a room/flat</div>
+          <div style={{ fontSize: '13px', color: '#9ca3af' }}>List your space and find a roommate</div>
+        </div>
+      </div>
+    </div>
+  );
+if (userRole === 'host' && !myListing) return (
+    <div style={{ background: '#09090b', minHeight: '100vh', color: 'white', fontFamily: 'Segoe UI, sans-serif', padding: '20px' }}>
+      <div style={{ maxWidth: '420px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+          <button onClick={() => setUserRole(null)} style={{ background: 'none', border: 'none', color: '#EC4899', cursor: 'pointer', fontSize: '20px' }}>←</button>
+          <h1 style={{ fontSize: '20px', fontWeight: 900 }}>🏠 List Your Room</h1>
+        </div>
+
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', fontWeight: 700 }}>📸 ROOM PHOTOS</div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            {listingImages.map((img, i) => (
+              <img key={i} src={img} style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '12px' }} />
+            ))}
+            <label style={{ width: '70px', height: '70px', borderRadius: '12px', border: '2px dashed #3f3f46', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280', fontSize: '20px' }}>
+              {uploadingImage ? '⏳' : '+'}
+              <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={async (e) => {
+                if (!e.target.files?.length) return;
+                setUploadingImage(true);
+                for (const file of Array.from(e.target.files)) {
+                  const formData = new FormData();
+                  formData.append('image', file);
+                  try {
+                    const res = await fetch('https://roomateai.onrender.com/api/upload', { method: 'POST', body: formData });
+                    const data = await res.json();
+                    setListingImages(prev => [...prev, data.url]);
+                  } catch {}
+                }
+                setUploadingImage(false);
+              }} />
+            </label>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+          <input value={listingPrice} onChange={e => setListingPrice(e.target.value)} placeholder="Rent (e.g. 7500)" type="number" style={{ padding: '14px 16px', background: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+          <input value={listingLocation} onChange={e => setListingLocation(e.target.value)} placeholder="Location (e.g. Koregaon Park, Pune)" style={{ padding: '14px 16px', background: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+          <select value={listingType} onChange={e => setListingType(e.target.value)} style={{ padding: '14px 16px', background: '#18181b', border: '1px solid #27272a', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit' }}>
+            <option>1BHK</option>
+            <option>2BHK</option>
+            <option>3BHK</option>
+          </select>
+        </div>
+
+        <button onClick={() => {
+          if (!listingPrice || !listingLocation) return alert('Please fill price and location!');
+          setMyListing({
+            id: 999,
+            price: `₹${listingPrice}`,
+            location: listingLocation,
+            type: listingType,
+            match: 100,
+            image: listingImages[0] || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&auto=format&fit=crop',
+            badge: '🆕 Your Listing',
+            badgeColor: '#10B981',
+            name: currentUser.name,
+            dept: profileCollege,
+            tags: [profileVibe, profileSocial],
+            color: '#10B981'
+          });
+          setUploadedImages(prev => ({ ...prev, 999: listingImages }));
+        }} style={{ width: '100%', padding: '15px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
+          Publish Listing ✨
+        </button>
+      </div>
+    </div>
+  );
   return (
     <div style={{ background: '#09090b', minHeight: '100vh', color: 'white', fontFamily: 'Segoe UI, sans-serif' }}>
       {/* Nav */}
@@ -234,8 +497,17 @@ setUploadedImages(prev => ({ ...prev, [selectedFlat.id]: data.url }));
           <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', marginBottom: '8px' }}></div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => { setShowAuth(true); setAuthMode('login'); }} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #ffffff30', borderRadius: '20px', color: 'white', cursor: 'pointer', fontSize: '13px' }}>Login</button>
-          <button onClick={() => { setShowAuth(true); setAuthMode('signup'); }} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '20px', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}>Get Started →</button>
+       {currentUser ? (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <span style={{ fontSize: '13px', color: '#9ca3af' }}>👋 {currentUser.name?.split(' ')[0]}</span>
+    <button onClick={() => { localStorage.removeItem('token'); localStorage.removeItem('user'); setCurrentUser(null); }} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #ffffff30', borderRadius: '20px', color: 'white', cursor: 'pointer', fontSize: '13px' }}>Logout</button>
+  </div>
+) : (
+  <>
+    <button onClick={() => { setShowAuth(true); setAuthMode('login'); }} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #ffffff30', borderRadius: '20px', color: 'white', cursor: 'pointer', fontSize: '13px' }}>Login</button>
+    <button onClick={() => { setShowAuth(true); setAuthMode('signup'); }} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '20px', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}>Get Started →</button>
+  </>
+)}  
         </div>
       </nav>
 
@@ -248,7 +520,7 @@ setUploadedImages(prev => ({ ...prev, [selectedFlat.id]: data.url }));
         ))}
       </div>
 
-      <div style={{ maxWidth: '480px', margin: '0 auto', padding: '16px' }}>
+      <div style={{ maxWidth: '480px', margin: '0 auto', padding: '20px 16px' }}>
 
         {/* EXPLORE */}
         {tab === 'explore' && (
@@ -286,14 +558,14 @@ setUploadedImages(prev => ({ ...prev, [selectedFlat.id]: data.url }));
     activeChip === 'AC Room' ? f.id !== 2 : true;
   return matchSearch && matchChip;
 }).map(flat => (
-              <div key={flat.id} onClick={() => setSelectedFlat(flat)} style={{ background: '#18181b', border: '1px solid #27272a', borderRadius: '20px', marginBottom: '14px', overflow: 'hidden', cursor: 'pointer' }}>
+              <div key={flat.id} onClick={() => { setSelectedFlat(flat); setActiveImageIndex(0); }} style={{ background: '#18181b', border: '1px solid #27272a', borderRadius: '20px', marginBottom: '14px', overflow: 'hidden', cursor: 'pointer' }}>
                 <div style={{ height: '200px', position: 'relative', overflow: 'hidden' }}>
-  <img src={flat.image} alt={flat.location} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }} onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')} onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')} />
+ <img src={uploadedImages[flat.id]?.[0] || flat.image} alt={flat.location} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }} onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')} onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')} />
   <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, transparent 50%, #18181b)` }} />
-                  <div style={{ position: 'absolute', top: '12px', left: '12px', background: flat.badgeColor, color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700 }}>{flat.badge}</div>
-                  <div onClick={(e) => { e.stopPropagation(); setSavedFlats(prev => prev.includes(flat.id) ? prev.filter(id => id !== flat.id) : [...prev, flat.id]); }} style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', borderRadius: '50%', background: '#000000aa', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-  {savedFlats.includes(flat.id) ? '❤️' : '🤍'}
-</div>
+                <div style={{ position: 'absolute', top: '12px', left: '12px', background: flat.badgeColor, color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700 }}>{flat.badge}</div>
+                  <div onClick={(e) => { e.stopPropagation(); setSavedFlats(prev => prev.includes(flat.id) ? prev.filter(id => id !== flat.id) : [...prev, flat.id]); }} style={{ position: 'absolute', top: '10px', right: '10px', padding: '6px 10px', borderRadius: '20px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 600, color: savedFlats.includes(flat.id) ? '#EC4899' : 'white' }}>
+                    {savedFlats.includes(flat.id) ? '✓ Saved' : '+ Save'}
+                  </div>
                 </div>
                 <div style={{ padding: '14px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
@@ -384,20 +656,42 @@ setUploadedImages(prev => ({ ...prev, [selectedFlat.id]: data.url }));
         {/* PROFILE */}
         {tab === 'profile' && (
           <div>
-            <div style={{ background: 'linear-gradient(135deg, #EC4899, #8B5CF6, #3B82F6)', borderRadius: '20px', padding: '28px', textAlign: 'center', marginBottom: '16px' }}>
-              <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'white', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>👩‍💻</div>
-              <div style={{ fontSize: '20px', fontWeight: 900 }}>{profileName}</div>
-<div style={{ fontSize: '13px', opacity: 0.8, margin: '4px 0' }}>{profileCollege}</div>
-              <div style={{ background: '#ffffff20', borderRadius: '20px', padding: '5px 14px', display: 'inline-block', fontSize: '12px', fontWeight: 700 }}>🦉 The Night Owl</div>
+           <div style={{ background: 'linear-gradient(135deg, #EC4899, #8B5CF6, #3B82F6)', borderRadius: '24px', padding: '32px 24px', textAlign: 'center', marginBottom: '16px', position: 'relative', overflow: 'hidden', boxShadow: '0 0 60px #8B5CF640' }}>
+              <div style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle, #ffffff15 0%, transparent 70%)', animation: 'pulse 3s ease-in-out infinite' }} />
+             <label style={{ width: '80px', height: '80px', borderRadius: '50%', background: profilePhoto ? `url(${profilePhoto})` : 'white', backgroundSize: 'cover', backgroundPosition: 'center', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', position: 'relative', boxShadow: '0 8px 20px rgba(0,0,0,0.3)', cursor: 'pointer' }}>
+                {!profilePhoto && '👩‍💻'}
+                <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '26px', height: '26px', borderRadius: '50%', background: '#EC4899', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', border: '2px solid #18181b' }}>📷</div>
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                  if (!e.target.files?.[0]) return;
+                  const formData = new FormData();
+                  formData.append('image', e.target.files[0]);
+                  try {
+                    const res = await fetch('https://roomateai.onrender.com/api/upload', {
+                      method: 'POST',
+                      body: formData
+                    });
+                    const data = await res.json();
+                    setProfilePhoto(data.url);
+                  } catch {
+                    alert('Upload failed!');
+                  }
+                }} />
+              </label>
+              <div style={{ fontSize: '22px', fontWeight: 900, position: 'relative' }}>{profileName}</div>
+              <div style={{ fontSize: '13px', opacity: 0.85, margin: '4px 0 12px', position: 'relative' }}>{profileCollege}</div>
+              <div style={{ background: '#ffffff25', backdropFilter: 'blur(10px)', borderRadius: '20px', padding: '6px 16px', display: 'inline-block', fontSize: '12px', fontWeight: 700, position: 'relative', border: '1px solid #ffffff30' }}>🦉 The Night Owl</div>
             </div>
-            <div style={{ background: '#18181b', border: '1px solid #27272a', borderRadius: '16px', padding: '16px', marginBottom: '12px' }}>
-              <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 700 }}>YOUR ROOMMATE DNA 🧬</div>
-              {[['Sleep Time', '🌙 After 1AM'], ['Study Style', '📚 Dead Silence'], ['Room Vibe', '✨ Clean Freak'], ['Social Level', '🐢 Selective'], ['Diet', '🌿 Vegetarian'], ['Budget', '💰 ₹6k–9k/mo']].map(([l, v]) => (
-                <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #27272a' }}>
-                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>{l}</span>
-                  <span style={{ fontSize: '13px', fontWeight: 700 }}>{v}</span>
-                </div>
-              ))}
+<div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '10px', fontWeight: 700 }}>YOUR ROOMMATE DNA 🧬</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {[['🌙', 'Sleep', profileSleep, '#8B5CF6'], ['📚', 'Study', profileStudy, '#3B82F6'], ['✨', 'Vibe', profileVibe, '#EC4899'], ['🐢', 'Social', profileSocial, '#10B981'], ['🌿', 'Diet', profileDiet, '#F59E0B'], ['💰', 'Budget', profileBudget, '#EF4444']].map(([icon, l, v, c]) => (
+                  <div key={l} style={{ background: `${c}15`, border: `1px solid ${c}30`, borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
+                    <div style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{l}</div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: c, marginTop: '2px' }}>{v}</div>
+                  </div>
+                ))}
+              </div>
             </div>
             <div style={{ background: '#18181b', border: '1px solid #27272a', borderRadius: '16px', padding: '16px', marginBottom: '12px' }}>
               <div style={{ fontSize: '11px', color: '#6b7280', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 700 }}>VIBE QUIZ 🎭</div>
@@ -468,14 +762,59 @@ setUploadedImages(prev => ({ ...prev, [selectedFlat.id]: data.url }));
           <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>College & Year</div>
           <input value={profileCollege} onChange={e => setProfileCollege(e.target.value)} style={{ width: '100%', padding: '12px 16px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
         </div>
-        <div>
+      <div>
           <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>Budget</div>
           <input value={profileBudget} onChange={e => setProfileBudget(e.target.value)} style={{ width: '100%', padding: '12px 16px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+        </div>
+        <div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>🌙 Sleep Time</div>
+          <select value={profileSleep} onChange={e => setProfileSleep(e.target.value)} style={{ width: '100%', padding: '12px 16px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}>
+            <option>Before 11PM</option>
+            <option>11PM–1AM</option>
+            <option>After 1AM</option>
+            <option>Sleep is a myth</option>
+          </select>
+        </div>
+        <div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>📚 Study Style</div>
+          <select value={profileStudy} onChange={e => setProfileStudy(e.target.value)} style={{ width: '100%', padding: '12px 16px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}>
+            <option>Dead Silence</option>
+            <option>Lo-fi Music</option>
+            <option>Coffee Shop Gang</option>
+            <option>Chaos Around Me</option>
+          </select>
+        </div>
+        <div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>✨ Room Vibe</div>
+          <select value={profileVibe} onChange={e => setProfileVibe(e.target.value)} style={{ width: '100%', padding: '12px 16px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}>
+            <option>Clean Freak</option>
+            <option>Pinterest Perfect</option>
+            <option>Organized Chaos</option>
+            <option>Floor is Storage</option>
+          </select>
+        </div>
+        <div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>🐢 Social Level</div>
+          <select value={profileSocial} onChange={e => setProfileSocial(e.target.value)} style={{ width: '100%', padding: '12px 16px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}>
+            <option>Social Butterfly</option>
+            <option>Selective</option>
+            <option>Rare Occasions</option>
+            <option>Hermit Mode</option>
+          </select>
+        </div>
+        <div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>🌿 Diet</div>
+          <select value={profileDiet} onChange={e => setProfileDiet(e.target.value)} style={{ width: '100%', padding: '12px 16px', background: '#27272a', border: '1px solid #3f3f46', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}>
+            <option>Vegetarian</option>
+            <option>Non-Vegetarian</option>
+            <option>Vegan</option>
+            <option>Eggetarian</option>
+          </select>
         </div>
       </div>
       <button onClick={() => setEditProfile(false)} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #EC4899, #8B5CF6)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
         Save Changes ✨
-      </button>
+      </button>  
     </div>
   </div>
 )}
@@ -592,6 +931,7 @@ setAuthLoading(true);
     } else {
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      setCurrentUser(data.user);
       setShowAuth(false);
     }
   } catch {

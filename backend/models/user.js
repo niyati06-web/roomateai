@@ -8,7 +8,9 @@ const userSchema = new mongoose.Schema({
   budget: { type: String, default: '' },
   location: { type: String, default: '' },
   college: { type: String, default: '' },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  resetOTP: { type: String, default: '' },
+  resetOTPExpiry: { type: Date }
 });
 
 module.exports = mongoose.model('User', userSchema);
